@@ -6,8 +6,6 @@ import { action } from "./_generated/server";
 declare const process: {
   env: {
     DISCORD_CLIENT_SECRET?: string;
-    DISCORD_REDIRECT_URI?: string;
-    VITE_DISCORD_CLIENT_ID?: string;
   };
 };
 
@@ -21,6 +19,7 @@ export const exchangeDiscordCode = action({
   args: {
     code: v.string(),
     clientId: v.string(),
+    redirectUri: v.string(),
   },
   handler: async (_, args) => {
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
@@ -34,11 +33,8 @@ export const exchangeDiscordCode = action({
       code: args.code,
       client_id: args.clientId,
       client_secret: clientSecret,
+      redirect_uri: args.redirectUri,
     });
-
-    if (process.env.DISCORD_REDIRECT_URI) {
-      body.set("redirect_uri", process.env.DISCORD_REDIRECT_URI);
-    }
 
     const response = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",

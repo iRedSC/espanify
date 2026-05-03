@@ -9,6 +9,7 @@ type AppStatus = 'idle' | 'ready' | 'error'
 
 const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID
 const hasConvexUrl = Boolean(import.meta.env.VITE_CONVEX_URL)
+const configuredRedirectUri = import.meta.env.VITE_DISCORD_REDIRECT_URI
 const localDiscordId = 'local-espanify-learner'
 
 function App() {
@@ -86,6 +87,7 @@ async function getDiscordId(
   exchangeDiscordCode: (args: {
     code: string
     clientId: string
+    redirectUri: string
   }) => Promise<{ accessToken: string }>,
 ) {
   if (!clientId || !isDiscordEnvironment()) {
@@ -95,14 +97,22 @@ async function getDiscordId(
   const discordSdk = new DiscordSDK(clientId)
   await discordSdk.ready()
 
+  const redirectUri = getDiscordRedirectUri()
   const { code } = await discordSdk.commands.authorize({
     client_id: clientId,
+    redirect_uri: redirectUri,
     response_type: 'code',
     state: '',
     prompt: 'none',
     scope: ['identify'],
+  } as Parameters<typeof discordSdk.commands.authorize>[0] & {
+    redirect_uri: string
   })
-  const { accessToken } = await exchangeDiscordCode({ code, clientId })
+  const { accessToken } = await exchangeDiscordCode({
+    code,
+    clientId,
+    redirectUri,
+  })
   const auth = await discordSdk.commands.authenticate({
     access_token: accessToken,
   })
@@ -115,6 +125,14 @@ function isDiscordEnvironment() {
     window.location.hostname.endsWith('.discordsays.com') ||
     window.parent !== window
   )
+}
+
+function getDiscordRedirectUri() {
+  if (configuredRedirectUri) {
+    return configuredRedirectUri
+  }
+
+  return `${window.location.origin}/`
 }
 
 function getErrorMessage(error: unknown) {
