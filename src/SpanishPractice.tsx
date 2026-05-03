@@ -29,6 +29,11 @@ type GradeResult = {
   feedback: string
 }
 
+type PreparedPractice = {
+  prompt: PracticePrompt
+  subjects: LessonConcept[]
+}
+
 type SpanishPracticeProps = {
   discordId: string
 }
@@ -45,9 +50,12 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
   const [selectedSubjects, setSelectedSubjects] = useState<LessonConcept[]>([])
   const [answer, setAnswer] = useState('')
   const [result, setResult] = useState<GradeResult>()
+  const [preparedPractice, setPreparedPractice] = useState<PreparedPractice>()
   const [error, setError] = useState<string>()
+  const [nextPromptError, setNextPromptError] = useState<string>()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGrading, setIsGrading] = useState(false)
+  const [isPreparingNext, setIsPreparingNext] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const subjectsForDisplay = useMemo(
@@ -80,24 +88,15 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
   async function handleGeneratePrompt() {
     if (!learningState) return
 
-    const nextSubjects = chooseSubjects(
-      learningState.level,
-      learningState.weaknesses,
-    )
-
     setIsGenerating(true)
     setError(undefined)
     setResult(undefined)
     setAnswer('')
 
     try {
-      const nextPrompt = await generatePrompt({
-        level: learningState.level,
-        subjects: nextSubjects,
-        weaknesses: learningState.weaknesses,
-      })
-      setSelectedSubjects(nextSubjects)
-      setPrompt(nextPrompt)
+      const practice = await createPractice(learningState)
+      setSelectedSubjects(practice.subjects)
+      setPrompt(practice.prompt)
       setTimeout(() => inputRef.current?.focus(), 100)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, 'Could not generate a sentence.'))
@@ -108,10 +107,14 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!prompt || !answer.trim()) return
+    if (!learningState || !prompt || !answer.trim()) return
 
     setIsGrading(true)
     setError(undefined)
+    setResult(undefined)
+    setPreparedPractice(undefined)
+    setNextPromptError(undefined)
+    void prepareNextPractice()
 
     try {
       const nextResult = await gradeTranslation({
@@ -132,6 +135,51 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
     } finally {
       setIsGrading(false)
     }
+  }
+
+  async function prepareNextPractice() {
+    if (!learningState) return
+
+    setIsPreparingNext(true)
+    setNextPromptError(undefined)
+
+    try {
+      const practice = await createPractice(learningState)
+      setPreparedPractice(practice)
+      return practice
+    } catch (caughtError) {
+      setNextPromptError(
+        getErrorMessage(caughtError, 'Could not prepare the next sentence.'),
+      )
+    } finally {
+      setIsPreparingNext(false)
+    }
+  }
+
+  async function handleNextPrompt() {
+    const practice = preparedPractice ?? (await prepareNextPractice())
+
+    if (!practice) return
+
+    setPrompt(practice.prompt)
+    setSelectedSubjects(practice.subjects)
+    setAnswer('')
+    setResult(undefined)
+    setError(undefined)
+    setPreparedPractice(undefined)
+    setNextPromptError(undefined)
+    setTimeout(() => inputRef.current?.focus(), 100)
+  }
+
+  async function createPractice(state: NonNullable<typeof learningState>) {
+    const subjects = chooseSubjects(state.level, state.weaknesses)
+    const nextPrompt = await generatePrompt({
+      level: state.level,
+      subjects,
+      weaknesses: state.weaknesses,
+    })
+
+    return { prompt: nextPrompt, subjects }
   }
 
   return (
@@ -161,25 +209,6 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
               </ul>
             </div>
 
-            {result && (
-              <div className={`card card--result ${result.passed ? '' : 'failed'}`}>
-                <p className="result-header">{result.passed ? 'Correct!' : 'Not quite'}</p>
-                <p className="result-feedback">{result.feedback}</p>
-                {result.weaknesses.length > 0 && (
-                  <div className="weakness-section">
-                    <h3>Areas to improve</h3>
-                    <ul className="chip-list">
-                      {result.weaknesses.map((w) => (
-                        <li className="chip" key={w.weakness}>
-                          {w.weakness} <strong>{w.severity}/10</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
             {error && <p className="error-text">{error}</p>}
           </div>
 
@@ -191,25 +220,25 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
               placeholder="Escribe tu traducción aquí..."
               rows={2}
               value={answer}
+              disabled={isGrading || Boolean(result)}
             />
-            <div className="btn-row">
-              <button
-                className="btn btn--primary"
-                disabled={isGrading || !answer.trim()}
-                type="submit"
-              >
-                {isGrading ? 'Grading...' : 'Submit'}
-              </button>
-              <button
-                className="btn btn--secondary"
-                disabled={isGenerating || isGrading}
-                onClick={handleGeneratePrompt}
-                type="button"
-              >
-                {isGenerating ? 'Loading...' : 'Next'}
-              </button>
-            </div>
+            <button
+              className="btn btn--primary btn--full"
+              disabled={isGrading || Boolean(result) || !answer.trim()}
+              type="submit"
+            >
+              {isGrading ? 'Grading...' : 'Submit'}
+            </button>
           </form>
+
+          {result && (
+            <ResultModal
+              isPreparingNext={isPreparingNext}
+              nextPromptError={nextPromptError}
+              onNext={handleNextPrompt}
+              result={result}
+            />
+          )}
         </>
       ) : (
         <div className="center-state">
@@ -228,6 +257,55 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
         </div>
       )}
     </>
+  )
+}
+
+function ResultModal({
+  isPreparingNext,
+  nextPromptError,
+  onNext,
+  result,
+}: {
+  isPreparingNext: boolean
+  nextPromptError?: string
+  onNext: () => void
+  result: GradeResult
+}) {
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <div
+        aria-labelledby="result-title"
+        aria-modal="true"
+        className={`card card--result modal-card ${result.passed ? '' : 'failed'}`}
+        role="dialog"
+      >
+        <p className="result-header" id="result-title">
+          {result.passed ? 'Correct!' : 'Not quite'}
+        </p>
+        <p className="result-feedback">{result.feedback}</p>
+        {result.weaknesses.length > 0 && (
+          <div className="weakness-section">
+            <h3>Areas to improve</h3>
+            <ul className="chip-list">
+              {result.weaknesses.map((w) => (
+                <li className="chip" key={w.weakness}>
+                  {w.weakness} <strong>{w.severity}/10</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {nextPromptError && <p className="error-text">{nextPromptError}</p>}
+        <button
+          className="btn btn--primary btn--full"
+          disabled={isPreparingNext}
+          onClick={onNext}
+          type="button"
+        >
+          {isPreparingNext ? 'Preparing next...' : 'Next'}
+        </button>
+      </div>
+    </div>
   )
 }
 
