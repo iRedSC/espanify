@@ -36,42 +36,26 @@ function ConnectedApp() {
   const [errorMessage, setErrorMessage] = useState<string>()
 
   useEffect(() => {
-    if (!clientId) {
-      registerDiscordUser({ discordId: localDiscordId })
-        .then(() => {
-          setDiscordId(localDiscordId)
-          setStatus('ready')
-        })
-        .catch((error) => {
-          setStatus('error')
-          setErrorMessage(error instanceof Error ? error.message : 'Unknown error')
-        })
-      return
-    }
-
     let isMounted = true
-    const discordSdk = new DiscordSDK(clientId)
 
-    async function initializeDiscord() {
+    async function initializeLearner() {
       try {
-        await discordSdk.ready()
-
-        const { user } = await discordSdk.commands.authenticate({})
-        await registerDiscordUser({ discordId: user.id })
+        const nextDiscordId = await getDiscordId()
+        await registerDiscordUser({ discordId: nextDiscordId })
 
         if (isMounted) {
-          setDiscordId(user.id)
+          setDiscordId(nextDiscordId)
           setStatus('ready')
         }
       } catch (error) {
         if (isMounted) {
           setStatus('error')
-          setErrorMessage(error instanceof Error ? error.message : 'Unknown error')
+          setErrorMessage(getErrorMessage(error))
         }
       }
     }
 
-    initializeDiscord()
+    initializeLearner()
 
     return () => {
       isMounted = false
@@ -95,6 +79,48 @@ function ConnectedApp() {
       )}
     </main>
   )
+}
+
+async function getDiscordId() {
+  if (!clientId || !isDiscordEnvironment()) {
+    return localDiscordId
+  }
+
+  const discordSdk = new DiscordSDK(clientId)
+  await discordSdk.ready()
+
+  const { participants } =
+    await discordSdk.commands.getInstanceConnectedParticipants()
+  const participant = participants.find((nextParticipant) => !nextParticipant.bot)
+
+  if (!participant) {
+    throw new Error("Discord did not return a connected activity participant.")
+  }
+
+  return participant.id
+}
+
+function isDiscordEnvironment() {
+  return (
+    window.location.hostname.endsWith('.discordsays.com') ||
+    window.parent !== window
+  )
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (typeof error === 'string') {
+    return error
+  }
+
+  try {
+    return JSON.stringify(error)
+  } catch {
+    return 'Could not initialize your learner profile.'
+  }
 }
 
 export default App
