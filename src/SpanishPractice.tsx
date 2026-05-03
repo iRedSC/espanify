@@ -1,6 +1,6 @@
 import { useAction, useMutation, useQuery } from 'convex/react'
 import type { FormEvent } from 'react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { parse } from 'yaml'
 import { api } from '../convex/_generated/api'
 import conceptsYaml from './lessons/concepts.yml?raw'
@@ -48,6 +48,7 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
   const [error, setError] = useState<string>()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGrading, setIsGrading] = useState(false)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const subjectsForDisplay = useMemo(
     () => selectedSubjects.map((subject) => subject.subject).join(', '),
@@ -55,17 +56,29 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
   )
 
   if (learningState === undefined) {
-    return <p className="loading">Loading your learner profile...</p>
+    return (
+      <>
+        <StatusBar level={0} points={0} />
+        <div className="center-state">
+          <p>Loading your profile...</p>
+        </div>
+      </>
+    )
   }
 
   if (learningState === null) {
-    return <p className="loading">Creating your learner profile...</p>
+    return (
+      <>
+        <StatusBar level={0} points={0} />
+        <div className="center-state">
+          <p>Creating your profile...</p>
+        </div>
+      </>
+    )
   }
 
   async function handleGeneratePrompt() {
-    if (!learningState) {
-      return
-    }
+    if (!learningState) return
 
     const nextSubjects = chooseSubjects(
       learningState.level,
@@ -85,6 +98,7 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
       })
       setSelectedSubjects(nextSubjects)
       setPrompt(nextPrompt)
+      setTimeout(() => inputRef.current?.focus(), 100)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, 'Could not generate a sentence.'))
     } finally {
@@ -94,10 +108,7 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-
-    if (!prompt || !answer.trim()) {
-      return
-    }
+    if (!prompt || !answer.trim()) return
 
     setIsGrading(true)
     setError(undefined)
@@ -124,112 +135,113 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
   }
 
   return (
-    <section className="practice-card">
-      <div className="stats-row" aria-label="Learning progress">
-        <span>Level {learningState.level}</span>
-        <span>{learningState.points}/10 points</span>
-      </div>
-
-      <div>
-        <p className="eyebrow">Spanish translation practice</p>
-        <h1>Translate one sentence at a time.</h1>
-        <p className="lede">
-          Espanify picks grammar just above your current level, uses your saved
-          weaknesses, and grades each Spanish answer.
-        </p>
-      </div>
+    <>
+      <StatusBar level={learningState.level} points={learningState.points} />
 
       {prompt ? (
-        <form className="lesson-panel" onSubmit={handleSubmit}>
-          <div>
-            <p className="panel-label">English sentence</p>
-            <p className="sentence">{prompt.englishSentence}</p>
+        <>
+          <div className="main-area">
+            <div className="card">
+              <p className="label">Translate to Spanish</p>
+              <p className="sentence">{prompt.englishSentence}</p>
+              {subjectsForDisplay && (
+                <p className="focus-text" style={{ marginTop: 8 }}>{subjectsForDisplay}</p>
+              )}
+            </div>
+
+            <div className="card">
+              <p className="label">Word hints</p>
+              <ul className="chip-list">
+                {prompt.wordHints.map((hint) => (
+                  <li className="chip" key={`${hint.english}-${hint.spanish}`}>
+                    <span>{hint.english}</span>
+                    <strong>{hint.spanish}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {result && (
+              <div className={`card card--result ${result.passed ? '' : 'failed'}`}>
+                <p className="result-header">{result.passed ? 'Correct!' : 'Not quite'}</p>
+                <p className="result-feedback">{result.feedback}</p>
+                {result.weaknesses.length > 0 && (
+                  <div className="weakness-section">
+                    <h3>Areas to improve</h3>
+                    <ul className="chip-list">
+                      {result.weaknesses.map((w) => (
+                        <li className="chip" key={w.weakness}>
+                          {w.weakness} <strong>{w.severity}/10</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {error && <p className="error-text">{error}</p>}
           </div>
 
-          <div>
-            <p className="panel-label">Focus</p>
-            <p>{subjectsForDisplay}</p>
-          </div>
-
-          <div>
-            <p className="panel-label">Word hints</p>
-            <ul className="hint-list">
-              {prompt.wordHints.map((hint) => (
-                <li key={`${hint.english}-${hint.spanish}`}>
-                  <span>{hint.english}</span>
-                  <strong>{hint.spanish}</strong>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <label className="answer-field">
-            Your Spanish translation
+          <form className="bottom-bar" onSubmit={handleSubmit}>
             <textarea
+              ref={inputRef}
+              className="input-field"
               onChange={(event) => setAnswer(event.target.value)}
-              placeholder="Escribe tu traduccion aqui..."
-              rows={4}
+              placeholder="Escribe tu traducción aquí..."
+              rows={2}
               value={answer}
             />
-          </label>
-
-          <div className="button-row">
-            <button disabled={isGrading || !answer.trim()} type="submit">
-              {isGrading ? 'Grading...' : 'Grade answer'}
-            </button>
-            <button
-              disabled={isGenerating || isGrading}
-              onClick={handleGeneratePrompt}
-              type="button"
-            >
-              New sentence
-            </button>
-          </div>
-        </form>
+            <div className="btn-row">
+              <button
+                className="btn btn--primary"
+                disabled={isGrading || !answer.trim()}
+                type="submit"
+              >
+                {isGrading ? 'Grading...' : 'Submit'}
+              </button>
+              <button
+                className="btn btn--secondary"
+                disabled={isGenerating || isGrading}
+                onClick={handleGeneratePrompt}
+                type="button"
+              >
+                {isGenerating ? 'Loading...' : 'Next'}
+              </button>
+            </div>
+          </form>
+        </>
       ) : (
-        <div className="empty-state">
-          <p>Start a short practice round tailored to your current level.</p>
+        <div className="center-state">
+          <h1>Ready to practice?</h1>
+          <p>
+            Translate sentences tailored to your level. Each answer earns points toward the next level.
+          </p>
           <button
+            className="btn btn--primary"
             disabled={isGenerating}
             onClick={handleGeneratePrompt}
             type="button"
           >
-            {isGenerating ? 'Generating...' : 'Generate sentence'}
+            {isGenerating ? 'Generating...' : 'Start'}
           </button>
         </div>
       )}
+    </>
+  )
+}
 
-      {result ? (
-        <div className={`result-card ${result.passed ? 'passed' : 'failed'}`}>
-          <h2>{result.passed ? 'Pass' : 'Try again'}</h2>
-          <p>{result.feedback}</p>
-          {result.weaknesses.length > 0 ? (
-            <ul className="weakness-list">
-              {result.weaknesses.map((weakness) => (
-                <li key={weakness.weakness}>
-                  {weakness.weakness} <span>{weakness.severity}/10</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
-
-      {learningState.weaknesses.length > 0 ? (
-        <aside className="weakness-summary">
-          <h2>Current weaknesses</h2>
-          <ul className="weakness-list">
-            {learningState.weaknesses.slice(0, 5).map((weakness) => (
-              <li key={weakness.weakness}>
-                {weakness.weakness} <span>{weakness.severity}/10</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-      ) : null}
-
-      {error ? <p className="error-message">{error}</p> : null}
-    </section>
+function StatusBar({ level, points }: { level: number; points: number }) {
+  return (
+    <div className="status-bar">
+      <div className="status-bar-left">
+        <span className="status-bar-title">espanify</span>
+      </div>
+      <div className="status-bar-right">
+        <span className="badge">Lv {level}</span>
+        <span className="badge badge--points">{points}/10</span>
+      </div>
+    </div>
   )
 }
 

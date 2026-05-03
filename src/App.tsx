@@ -18,13 +18,12 @@ function App() {
 
   return (
     <main className="activity-shell">
-      <section className="practice-card">
-        <p className="eyebrow">Configuration needed</p>
-        <h1>Connect Convex to start practicing.</h1>
-        <p className="lede">
-          Add <code>VITE_CONVEX_URL</code> to enable the Spanish learning flow.
+      <div className="center-state">
+        <h1>Setup needed</h1>
+        <p>
+          Add <code>VITE_CONVEX_URL</code> to start practicing.
         </p>
-      </section>
+      </div>
     </main>
   )
 }
@@ -68,15 +67,14 @@ function ConnectedApp() {
       {status === 'ready' && discordId ? (
         <SpanishPractice discordId={discordId} />
       ) : (
-        <section className="practice-card" aria-live="polite">
-          <p className="eyebrow">Espanify</p>
-          <h1>Preparing your Spanish practice.</h1>
-          <p className="lede">
+        <div className="center-state">
+          <h1>espanify</h1>
+          <p>
             {status === 'error'
               ? (errorMessage ?? 'Could not initialize your learner profile.')
-              : 'Connecting to your learner profile...'}
+              : 'Connecting...'}
           </p>
-        </section>
+        </div>
       )}
     </main>
   )

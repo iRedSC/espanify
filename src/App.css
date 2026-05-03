@@ -1,185 +1,261 @@
+/* ── Shell ── */
 .activity-shell {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  min-height: 100svh;
-  padding: 56px;
-  box-sizing: border-box;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px;
-  }
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
 }
 
-.eyebrow {
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  margin-bottom: 16px;
-  text-transform: uppercase;
-}
-
-.lede {
-  max-width: 620px;
-  font-size: 20px;
-}
-
-.practice-card,
-.lesson-panel,
-.result-card,
-.weakness-summary {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
-  box-sizing: border-box;
-  padding: 24px;
-}
-
-.practice-card {
-  display: grid;
-  gap: 24px;
-  margin: auto 0;
-  max-width: 860px;
-  width: 100%;
-}
-
-.stats-row,
-.button-row {
-  align-items: center;
+/* ── Status Bar ── */
+.status-bar {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.status-bar-left,
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-bar-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-h);
+  letter-spacing: -0.01em;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.badge--points {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+/* ── Main Content Area ── */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
   gap: 12px;
 }
 
-.stats-row span {
-  background: rgba(255, 255, 255, 0.1);
+/* ── Cards ── */
+.card {
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-h);
-  font-weight: 700;
-  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  padding: 16px;
 }
 
-.lesson-panel {
-  display: grid;
-  gap: 20px;
+.card--result {
+  border-left: 3px solid var(--green);
+  background: var(--green-dim);
 }
 
-.panel-label {
-  color: var(--accent);
-  font-size: 13px;
+.card--result.failed {
+  border-left-color: var(--red);
+  background: var(--red-dim);
+}
+
+/* ── Labels ── */
+.label {
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  margin-bottom: 8px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 4px;
 }
 
+/* ── Sentence Display ── */
 .sentence {
+  font-size: 20px;
+  font-weight: 600;
   color: var(--text-h);
-  font-size: clamp(28px, 5vw, 44px);
   line-height: 1.35;
 }
 
-.hint-list,
-.weakness-list {
+/* ── Chips (hints, weaknesses, tags) ── */
+.chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
   list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
-.hint-list li,
-.weakness-list li {
+.chip {
+  display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.08);
+  gap: 5px;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  display: flex;
-  gap: 8px;
-  padding: 8px 10px;
-}
-
-.hint-list span {
   color: var(--text);
 }
 
-.hint-list strong,
-.weakness-list span {
+.chip strong {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+/* ── Text Input ── */
+.input-field {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 15px;
+  padding: 10px 12px;
+  resize: none;
+  min-height: 0;
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ── Buttons ── */
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--secondary {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   color: var(--text-h);
 }
 
-.answer-field {
-  color: var(--text-h);
-  display: grid;
-  font-weight: 700;
+.btn--full {
+  width: 100%;
+}
+
+/* ── Button Row ── */
+.btn-row {
+  display: flex;
   gap: 8px;
 }
 
-textarea {
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  color: var(--text-h);
-  font: inherit;
-  min-height: 128px;
-  padding: 14px 16px;
-  resize: vertical;
+.btn-row .btn {
+  flex: 1;
 }
 
-textarea:focus {
-  border-color: var(--accent);
-  outline: 3px solid color-mix(in srgb, var(--accent), transparent 72%);
-}
-
-button {
-  appearance: none;
-  background: var(--accent);
-  border: 0;
-  border-radius: 999px;
-  color: var(--text-h);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 700;
-  justify-self: start;
-  padding: 12px 20px;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.62;
-}
-
-.empty-state {
-  align-items: center;
+/* ── Bottom Bar (sticky input area) ── */
+.bottom-bar {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Empty / Loading States ── */
+.center-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 16px;
-  justify-content: space-between;
+  padding: 32px 16px;
 }
 
-.result-card,
-.weakness-summary {
-  display: grid;
-  gap: 14px;
+.center-state h1 {
+  font-size: 22px;
 }
 
-.result-card.passed {
-  border-color: color-mix(in srgb, var(--status-ready), transparent 42%);
+.center-state p {
+  max-width: 300px;
+  font-size: 14px;
+  color: var(--text);
 }
 
-.result-card.failed,
-.error-message {
-  border-color: color-mix(in srgb, var(--status-error), transparent 42%);
+/* ── Feedback / Error ── */
+.error-text {
+  font-size: 13px;
+  color: var(--red);
+  padding: 0 16px;
 }
 
-.error-message {
-  color: var(--status-error);
+/* ── Result card content ── */
+.result-header {
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.loading {
-  margin: auto 0;
+.result-feedback {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Weakness Summary ── */
+.weakness-section {
+  padding-top: 8px;
+}
+
+.weakness-section h3 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+/* ── Focus subjects ── */
+.focus-text {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
 }
