@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_22", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["pnpm install --frozen-lockfile --config.optional=true"]
 
 [phases.build]
 cmds = ["pnpm build"]
 
 [start]
-cmd = "pnpm start -- --port ${PORT:-3000}"
+cmd = "pnpm start -- --port ${PORT:-8999}"
