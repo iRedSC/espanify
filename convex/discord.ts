@@ -6,6 +6,7 @@ import { action } from "./_generated/server";
 declare const process: {
   env: {
     DISCORD_CLIENT_SECRET?: string;
+    DISCORD_REDIRECT_URI?: string;
   };
 };
 
@@ -22,9 +23,14 @@ export const exchangeDiscordCode = action({
   },
   handler: async (_, args) => {
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+    const redirectUri = process.env.DISCORD_REDIRECT_URI;
 
     if (!clientSecret) {
       throw new Error("DISCORD_CLIENT_SECRET is required for Discord auth.");
+    }
+
+    if (!redirectUri) {
+      throw new Error("DISCORD_REDIRECT_URI is required for Discord auth.");
     }
 
     const body = new URLSearchParams({
@@ -32,6 +38,7 @@ export const exchangeDiscordCode = action({
       code: args.code,
       client_id: args.clientId,
       client_secret: clientSecret,
+      redirect_uri: redirectUri,
     });
 
     const response = await fetch("https://discord.com/api/oauth2/token", {
