@@ -24,10 +24,7 @@ const weaknessValidator = v.object({
 
 type PracticePrompt = {
   englishSentence: string;
-  wordHints: Array<{
-    english: string;
-    spanish: string;
-  }>;
+  wordHints: string[];
 };
 
 type PracticeGrade = {
@@ -89,12 +86,9 @@ export const generatePracticePrompt = action({
 
     return {
       englishSentence: parsed.englishSentence,
-      wordHints: parsed.wordHints
-        .filter((hint) => hint.english?.trim() && hint.spanish?.trim())
-        .map((hint) => ({
-          english: hint.english.trim(),
-          spanish: hint.spanish.trim(),
-        })),
+      wordHints: shuffle(
+        parsed.wordHints.filter((hint) => hint.trim()).map((hint) => hint.trim()),
+      ),
     };
   },
 });
@@ -215,7 +209,11 @@ function isPracticePrompt(value: unknown): value is PracticePrompt {
 
   const prompt = value as PracticePrompt;
 
-  return typeof prompt.englishSentence === "string" && Array.isArray(prompt.wordHints);
+  return (
+    typeof prompt.englishSentence === "string" &&
+    Array.isArray(prompt.wordHints) &&
+    prompt.wordHints.every((hint) => typeof hint === "string")
+  );
 }
 
 function isFailedRunStatus(status: TriggerRunStatus | undefined) {
@@ -230,4 +228,15 @@ function isFailedRunStatus(status: TriggerRunStatus | undefined) {
 
 function sleep(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function shuffle<T>(items: T[]) {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
 }

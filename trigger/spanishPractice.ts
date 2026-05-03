@@ -104,10 +104,7 @@ type OpenAIResponse = {
 
 type PracticePrompt = {
     englishSentence: string;
-    wordHints: Array<{
-        english: string;
-        spanish: string;
-    }>;
+    wordHints: string[];
 };
 
 type PracticeGrade = {
@@ -126,9 +123,10 @@ export const generatePracticePrompt = task({
             [
                 "You create short translation drills for English speakers learning Spanish.",
                 "Return only JSON with this exact shape:",
-                '{"englishSentence":"string","wordHints":[{"english":"string","spanish":"string"}]}',
+                '{"englishSentence":"string","wordHints":["string"]}',
                 "The English sentence must be short, natural, and exercise the selected Spanish grammar subjects.",
-                "The wordHints list must include a literal Spanish translation for every meaningful present English word.",
+                "The wordHints list must include only Spanish words or phrases that help translate the sentence.",
+                "Do not include English words in wordHints.",
                 `The sentence should be from the theme of ${getRandomElement(themes)}.`,
             ].join("\n"),
             payload,

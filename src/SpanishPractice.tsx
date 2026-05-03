@@ -14,10 +14,7 @@ type LessonConcept = {
 
 type PracticePrompt = {
   englishSentence: string
-  wordHints: Array<{
-    english: string
-    spanish: string
-  }>
+  wordHints: string[]
 }
 
 type GradeResult = {
@@ -200,10 +197,9 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
             <div className="card">
               <p className="label">Word hints</p>
               <ul className="chip-list">
-                {prompt.wordHints.map((hint) => (
-                  <li className="chip" key={`${hint.english}-${hint.spanish}`}>
-                    <span>{hint.english}</span>
-                    <strong>{hint.spanish}</strong>
+                {prompt.wordHints.map((hint, index) => (
+                  <li className="chip" key={`${hint}-${index}`}>
+                    <strong>{hint}</strong>
                   </li>
                 ))}
               </ul>
