@@ -27,6 +27,11 @@ type PracticePrompt = {
   wordHints: string[];
 };
 
+type RawPracticePrompt = {
+  englishSentence: string;
+  wordHints: Array<string | { spanish?: string }>;
+};
+
 type PracticeGrade = {
   passed: boolean;
   weaknesses: Array<{
@@ -74,7 +79,7 @@ export const generatePracticePrompt = action({
     weaknesses: v.array(weaknessValidator),
   },
   handler: async (_, args): Promise<PracticePrompt> => {
-    const parsed = await runTriggerTask<PracticePrompt>("generate-practice-prompt", {
+    const parsed = await runTriggerTask<RawPracticePrompt>("generate-practice-prompt", {
       learnerLevel: args.level,
       selectedSubjects: args.subjects,
       knownWeaknesses: args.weaknesses,
@@ -86,9 +91,7 @@ export const generatePracticePrompt = action({
 
     return {
       englishSentence: parsed.englishSentence,
-      wordHints: shuffle(
-        parsed.wordHints.filter((hint) => hint.trim()).map((hint) => hint.trim()),
-      ),
+      wordHints: shuffle(normalizeWordHints(parsed.wordHints)),
     };
   },
 });
@@ -202,17 +205,21 @@ async function waitForTriggerRun<T>(
   throw new Error("Trigger.dev Spanish practice run timed out.");
 }
 
-function isPracticePrompt(value: unknown): value is PracticePrompt {
+function isPracticePrompt(value: unknown): value is RawPracticePrompt {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const prompt = value as PracticePrompt;
+  const prompt = value as RawPracticePrompt;
 
   return (
     typeof prompt.englishSentence === "string" &&
     Array.isArray(prompt.wordHints) &&
-    prompt.wordHints.every((hint) => typeof hint === "string")
+    prompt.wordHints.every(
+      (hint) =>
+        typeof hint === "string" ||
+        (Boolean(hint) && typeof hint === "object" && typeof hint.spanish === "string"),
+    )
   );
 }
 
@@ -228,6 +235,13 @@ function isFailedRunStatus(status: TriggerRunStatus | undefined) {
 
 function sleep(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function normalizeWordHints(hints: RawPracticePrompt["wordHints"]) {
+  return hints
+    .map((hint) => (typeof hint === "string" ? hint : hint.spanish))
+    .filter((hint): hint is string => Boolean(hint?.trim()))
+    .map((hint) => hint.trim());
 }
 
 function shuffle<T>(items: T[]) {
