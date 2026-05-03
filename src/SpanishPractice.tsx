@@ -1,42 +1,23 @@
 import { useAction, useMutation, useQuery } from 'convex/react'
 import type { FormEvent } from 'react'
 import { useMemo, useRef, useState } from 'react'
-import { parse } from 'yaml'
 import { api } from '../convex/_generated/api'
-import conceptsYaml from './lessons/concepts.yml?raw'
-
-type LessonConcept = {
-  subject: string
-  importance: number
-  difficulty: number
-  roadblock: string
-}
-
-type PracticePrompt = {
-  englishSentence: string
-  wordHints: string[]
-}
-
-type GradeResult = {
-  passed: boolean
-  weaknesses: Array<{
-    weakness: string
-    severity: number
-  }>
-  feedback: string
-}
-
-type PreparedPractice = {
-  prompt: PracticePrompt
-  subjects: LessonConcept[]
-}
+import { chooseSubjects } from './practice/chooseSubjects'
+import { PracticeAnswerForm } from './practice/components/PracticeAnswerForm'
+import { PracticePromptCards } from './practice/components/PracticePromptCards'
+import { PracticeStart } from './practice/components/PracticeStart'
+import { ResultModal } from './practice/components/ResultModal'
+import { StatusBar } from './practice/components/StatusBar'
+import type {
+  GradeResult,
+  LessonConcept,
+  PracticePrompt,
+  PreparedPractice,
+} from './practice/types'
 
 type SpanishPracticeProps = {
   discordId: string
 }
-
-const conceptsByLevel = parse(conceptsYaml) as Record<string, LessonConcept[]>
-const concepts = Object.values(conceptsByLevel).flat()
 
 export function SpanishPractice({ discordId }: SpanishPracticeProps) {
   const learningState = useQuery(api.users.getLearningState, { discordId })
@@ -185,47 +166,20 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
 
       {prompt ? (
         <>
-          <div className="main-area">
-            <div className="card">
-              <p className="label">Translate to Spanish</p>
-              <p className="sentence">{prompt.englishSentence}</p>
-              {subjectsForDisplay && (
-                <p className="focus-text" style={{ marginTop: 8 }}>{subjectsForDisplay}</p>
-              )}
-            </div>
+          <PracticePromptCards
+            error={error}
+            prompt={prompt}
+            subjectsForDisplay={subjectsForDisplay}
+          />
 
-            <div className="card">
-              <p className="label">Word hints</p>
-              <ul className="chip-list">
-                {prompt.wordHints.map((hint, index) => (
-                  <li className="chip" key={`${hint}-${index}`}>
-                    <strong>{hint}</strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {error && <p className="error-text">{error}</p>}
-          </div>
-
-          <form className="bottom-bar" onSubmit={handleSubmit}>
-            <textarea
-              ref={inputRef}
-              className="input-field"
-              onChange={(event) => setAnswer(event.target.value)}
-              placeholder="Escribe tu traducción aquí..."
-              rows={2}
-              value={answer}
-              disabled={isGrading || Boolean(result)}
-            />
-            <button
-              className="btn btn--primary btn--full"
-              disabled={isGrading || Boolean(result) || !answer.trim()}
-              type="submit"
-            >
-              {isGrading ? 'Grading...' : 'Submit'}
-            </button>
-          </form>
+          <PracticeAnswerForm
+            answer={answer}
+            disabled={isGrading || Boolean(result)}
+            inputRef={inputRef}
+            isGrading={isGrading}
+            onAnswerChange={setAnswer}
+            onSubmit={handleSubmit}
+          />
 
           {result && (
             <ResultModal
@@ -237,117 +191,10 @@ export function SpanishPractice({ discordId }: SpanishPracticeProps) {
           )}
         </>
       ) : (
-        <div className="center-state">
-          <h1>Ready to practice?</h1>
-          <p>
-            Translate sentences tailored to your level. Each answer earns points toward the next level.
-          </p>
-          <button
-            className="btn btn--primary"
-            disabled={isGenerating}
-            onClick={handleGeneratePrompt}
-            type="button"
-          >
-            {isGenerating ? 'Generating...' : 'Start'}
-          </button>
-        </div>
+        <PracticeStart isGenerating={isGenerating} onStart={handleGeneratePrompt} />
       )}
     </>
   )
-}
-
-function ResultModal({
-  isPreparingNext,
-  nextPromptError,
-  onNext,
-  result,
-}: {
-  isPreparingNext: boolean
-  nextPromptError?: string
-  onNext: () => void
-  result: GradeResult
-}) {
-  return (
-    <div className="modal-backdrop" role="presentation">
-      <div
-        aria-labelledby="result-title"
-        aria-modal="true"
-        className={`card card--result modal-card ${result.passed ? '' : 'failed'}`}
-        role="dialog"
-      >
-        <p className="result-header" id="result-title">
-          {result.passed ? 'Correct!' : 'Not quite'}
-        </p>
-        <p className="result-feedback">{result.feedback}</p>
-        {result.weaknesses.length > 0 && (
-          <div className="weakness-section">
-            <h3>Areas to improve</h3>
-            <ul className="chip-list">
-              {result.weaknesses.map((w) => (
-                <li className="chip" key={w.weakness}>
-                  {w.weakness} <strong>{w.severity}/10</strong>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {nextPromptError && <p className="error-text">{nextPromptError}</p>}
-        <button
-          className="btn btn--primary btn--full"
-          disabled={isPreparingNext}
-          onClick={onNext}
-          type="button"
-        >
-          {isPreparingNext ? 'Preparing next...' : 'Next'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function StatusBar({ level, points }: { level: number; points: number }) {
-  return (
-    <div className="status-bar">
-      <div className="status-bar-left">
-        <span className="status-bar-title">espanify</span>
-      </div>
-      <div className="status-bar-right">
-        <span className="badge">Lv {level}</span>
-        <span className="badge badge--points">{points}/10</span>
-      </div>
-    </div>
-  )
-}
-
-function chooseSubjects(
-  level: number,
-  weaknesses: Array<{ weakness: string; severity: number }>,
-) {
-  const preferredWeaknesses = weaknesses.map((weakness) =>
-    weakness.weakness.toLowerCase(),
-  )
-  const levelMatched = concepts.filter(
-    (concept) => concept.difficulty >= level && concept.difficulty <= level + 2,
-  )
-  const pool = levelMatched.length > 0 ? levelMatched : concepts
-
-  const ranked = [...pool].sort((a, b) => {
-    const weaknessRank =
-      weaknessScore(b, preferredWeaknesses) - weaknessScore(a, preferredWeaknesses)
-    return weaknessRank || b.importance - a.importance || a.difficulty - b.difficulty
-  })
-  const count = Math.min(ranked.length, Math.random() > 0.45 ? 2 : 1)
-
-  return ranked.slice(0, count)
-}
-
-function weaknessScore(concept: LessonConcept, weaknesses: string[]) {
-  const subject = concept.subject.toLowerCase()
-  return weaknesses.some(
-    (weakness) => subject.includes(weakness) || weakness.includes(subject),
-  )
-    ? 1
-    : 0
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
