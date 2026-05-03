@@ -31,6 +31,7 @@
 }
 
 .status-card,
+.mood-card,
 .next-steps {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -48,6 +49,7 @@
 }
 
 .status-card h2,
+.mood-card h2,
 .next-steps h2 {
   margin-bottom: 8px;
 }
@@ -71,6 +73,39 @@
 .status-dot--error {
   background: var(--status-error);
   box-shadow: 0 0 0 8px color-mix(in srgb, var(--status-error), transparent 82%);
+}
+
+.mood-card {
+  display: grid;
+  gap: 16px;
+}
+
+.mood-result {
+  color: var(--text-h);
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.mood-error {
+  color: var(--status-error);
+}
+
+.mood-button {
+  appearance: none;
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-h);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  justify-self: start;
+  padding: 12px 20px;
+}
+
+.mood-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .next-steps {

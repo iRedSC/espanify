@@ -1,10 +1,12 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk'
 import { useEffect, useState } from 'react'
 import './App.css'
+import { MoodGenerator, MoodGeneratorUnavailable } from './MoodGenerator'
 
 type DiscordStatus = 'idle' | 'ready' | 'missing-client-id' | 'error'
 
 const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID
+const hasConvexUrl = Boolean(import.meta.env.VITE_CONVEX_URL)
 
 function App() {
   const [status, setStatus] = useState<DiscordStatus>(
@@ -60,6 +62,8 @@ function App() {
           <p>{getStatusDescription(status, errorMessage)}</p>
         </div>
       </section>
+
+      {hasConvexUrl ? <MoodGenerator /> : <MoodGeneratorUnavailable />}
 
       <section className="next-steps">
         <h2>Next steps</h2>
