@@ -68,7 +68,7 @@ function App() {
             Add your Discord app client ID to <code>.env.local</code>.
           </li>
           <li>
-            Start Vite with <code>npm run dev</code>.
+            Start Vite with <code>pnpm dev</code>.
           </li>
           <li>
             Point your Discord Activity URL mapping at your HTTPS tunnel.

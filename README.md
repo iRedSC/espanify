@@ -44,9 +44,30 @@ prefer.
 When Discord loads the app, `src/App.tsx` creates a `DiscordSDK` instance with
 `VITE_DISCORD_CLIENT_ID` and calls `discordSdk.ready()`.
 
+## Deploy With Dokploy
+
+This project includes `nixpacks.toml` so Dokploy can build and serve the
+production Vite bundle with Nixpacks.
+
+1. Create a new Dokploy application from this repository.
+2. Select Nixpacks as the builder.
+3. Add this environment variable before the first deploy:
+
+   ```env
+   VITE_DISCORD_CLIENT_ID=your_discord_application_client_id
+   ```
+
+4. Deploy the app. Nixpacks runs `pnpm install --frozen-lockfile`, `pnpm build`,
+   and then starts the server with `pnpm start -- --port ${PORT:-3000}`.
+5. Use the Dokploy HTTPS domain as the URL mapping for your Discord Activity.
+
+If you change `VITE_DISCORD_CLIENT_ID`, redeploy the app so Vite can rebuild the
+client bundle with the new value.
+
 ## Scripts
 
 - `pnpm dev` starts Vite on port `3000`.
 - `pnpm build` type-checks and builds the app.
 - `pnpm lint` runs ESLint.
 - `pnpm preview` serves the production build locally.
+- `pnpm start` serves the production build on `0.0.0.0` for deployment.
