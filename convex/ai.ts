@@ -5,8 +5,8 @@ import { v } from "convex/values";
 
 declare const process: {
   env: {
-    OPENAI_API_KEY?: string;
-    OPENAI_MODEL?: string;
+    TRIGGER_API_URL?: string;
+    TRIGGER_SECRET_KEY?: string;
   };
 };
 
@@ -21,20 +21,6 @@ const weaknessValidator = v.object({
   weakness: v.string(),
   severity: v.number(),
 });
-
-type OpenAITextContent = {
-  type?: string;
-  text?: string;
-};
-
-type OpenAIOutputItem = {
-  content?: OpenAITextContent[];
-};
-
-type OpenAIResponse = {
-  output_text?: string;
-  output?: OpenAIOutputItem[];
-};
 
 type PracticePrompt = {
   englishSentence: string;
@@ -53,6 +39,37 @@ type PracticeGrade = {
   feedback: string;
 };
 
+type TriggerRun = {
+  id?: string;
+  error?: string;
+};
+
+type TriggerRunStatus =
+  | "PENDING_VERSION"
+  | "DELAYED"
+  | "QUEUED"
+  | "EXECUTING"
+  | "REATTEMPTING"
+  | "FROZEN"
+  | "COMPLETED"
+  | "CANCELED"
+  | "FAILED"
+  | "CRASHED"
+  | "INTERRUPTED"
+  | "SYSTEM_FAILURE";
+
+type TriggerRunResult = {
+  status?: TriggerRunStatus;
+  output?: unknown;
+  error?: string;
+  attempts?: Array<{
+    status?: string;
+    error?: {
+      message?: string;
+    };
+  }>;
+};
+
 export const generatePracticePrompt = action({
   args: {
     level: v.number(),
@@ -60,24 +77,13 @@ export const generatePracticePrompt = action({
     weaknesses: v.array(weaknessValidator),
   },
   handler: async (_, args): Promise<PracticePrompt> => {
-    const text = await completeJson(
-      [
-        "You create short translation drills for English speakers learning Spanish.",
-        "Return only JSON with this exact shape:",
-        '{"englishSentence":"string","wordHints":[{"english":"string","spanish":"string"}]}',
-        "The English sentence must be short, natural, and exercise the selected Spanish grammar subjects.",
-        "The wordHints list must include a literal Spanish translation for every meaningful present English word.",
-      ].join("\n"),
-      {
-        learnerLevel: args.level,
-        selectedSubjects: args.subjects,
-        knownWeaknesses: args.weaknesses,
-      },
-    );
+    const parsed = await runTriggerTask<PracticePrompt>("generate-practice-prompt", {
+      learnerLevel: args.level,
+      selectedSubjects: args.subjects,
+      knownWeaknesses: args.weaknesses,
+    });
 
-    const parsed = JSON.parse(text) as PracticePrompt;
-
-    if (!parsed.englishSentence || !Array.isArray(parsed.wordHints)) {
+    if (!isPracticePrompt(parsed)) {
       throw new Error("AI returned an invalid practice prompt.");
     }
 
@@ -100,23 +106,11 @@ export const gradeTranslation = action({
     subjects: v.array(subjectValidator),
   },
   handler: async (_, args): Promise<PracticeGrade> => {
-    const text = await completeJson(
-      [
-        "You grade Spanish translations from English speakers.",
-        "Return only JSON with this exact shape:",
-        '{"passed":true,"weaknesses":[{"weakness":"string","severity":1}],"feedback":"string"}',
-        "Pass if the answer accurately translates the sentence and handles the selected grammar subjects.",
-        "If it fails, list concise weakness names with severity from 1 to 10.",
-        "Use an empty weaknesses array when there are no meaningful weaknesses.",
-      ].join("\n"),
-      {
-        englishSentence: args.englishSentence,
-        spanishAnswer: args.spanishAnswer,
-        selectedSubjects: args.subjects,
-      },
-    );
-
-    const parsed = JSON.parse(text) as PracticeGrade;
+    const parsed = await runTriggerTask<PracticeGrade>("grade-translation", {
+      englishSentence: args.englishSentence,
+      spanishAnswer: args.spanishAnswer,
+      selectedSubjects: args.subjects,
+    });
 
     return {
       passed: Boolean(parsed.passed),
@@ -133,68 +127,107 @@ export const gradeTranslation = action({
   },
 });
 
-async function completeJson(systemPrompt: string, payload: unknown) {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function runTriggerTask<T>(taskId: string, payload: unknown): Promise<T> {
+  const apiUrl = process.env.TRIGGER_API_URL ?? "https://api.trigger.dev";
+  const secretKey = process.env.TRIGGER_SECRET_KEY;
 
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is required for Spanish practice.");
+  if (!secretKey) {
+    throw new Error("TRIGGER_SECRET_KEY is required for Spanish practice.");
   }
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const triggerResponse = await fetch(`${apiUrl}/api/v1/tasks/${taskId}/trigger`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${secretKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: JSON.stringify(payload),
-        },
-      ],
-      text: {
-        format: {
-          type: "json_object",
-        },
-      },
+      payload,
     }),
   });
 
-  if (!response.ok) {
-    const details = await response.text();
-    console.error("OpenAI Spanish practice request failed", {
-      status: response.status,
+  if (!triggerResponse.ok) {
+    const details = await triggerResponse.text();
+    console.error("Trigger.dev Spanish practice request failed", {
+      status: triggerResponse.status,
       details,
     });
-    throw new Error("OpenAI Spanish practice request failed.");
+    throw new Error("Trigger.dev Spanish practice request failed.");
   }
 
-  const data = (await response.json()) as OpenAIResponse;
-  const text = extractText(data);
+  const triggerRun = (await triggerResponse.json()) as TriggerRun;
 
-  if (!text) {
-    throw new Error("OpenAI returned an empty Spanish practice response.");
+  if (!triggerRun.id) {
+    throw new Error(triggerRun.error ?? "Trigger.dev did not return a run id.");
   }
 
-  return text;
+  return await waitForTriggerRun<T>(apiUrl, secretKey, triggerRun.id);
 }
 
-function extractText(data: OpenAIResponse) {
-  if (data.output_text) {
-    return data.output_text.trim();
+async function waitForTriggerRun<T>(
+  apiUrl: string,
+  secretKey: string,
+  runId: string,
+): Promise<T> {
+  const deadline = Date.now() + 60_000;
+
+  while (Date.now() < deadline) {
+    const response = await fetch(`${apiUrl}/api/v3/runs/${runId}`, {
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const details = await response.text();
+      console.error("Trigger.dev Spanish practice run lookup failed", {
+        status: response.status,
+        details,
+      });
+      throw new Error("Trigger.dev Spanish practice run lookup failed.");
+    }
+
+    const run = (await response.json()) as TriggerRunResult;
+
+    if (run.status === "COMPLETED") {
+      return run.output as T;
+    }
+
+    if (isFailedRunStatus(run.status)) {
+      const failedAttempt = run.attempts?.find((attempt) => attempt.error?.message);
+      throw new Error(
+        failedAttempt?.error?.message ??
+          run.error ??
+          "Trigger.dev Spanish practice run failed.",
+      );
+    }
+
+    await sleep(1_000);
   }
 
+  throw new Error("Trigger.dev Spanish practice run timed out.");
+}
+
+function isPracticePrompt(value: unknown): value is PracticePrompt {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const prompt = value as PracticePrompt;
+
+  return typeof prompt.englishSentence === "string" && Array.isArray(prompt.wordHints);
+}
+
+function isFailedRunStatus(status: TriggerRunStatus | undefined) {
   return (
-    data.output
-      ?.flatMap((item) => item.content ?? [])
-      .map((content) => content.text)
-      .find((text): text is string => Boolean(text?.trim()))
-      ?.trim() ?? ""
+    status === "CANCELED" ||
+    status === "FAILED" ||
+    status === "CRASHED" ||
+    status === "INTERRUPTED" ||
+    status === "SYSTEM_FAILURE"
   );
+}
+
+function sleep(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
