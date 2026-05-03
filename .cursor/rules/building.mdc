@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+
+# VERY IMPORTANT
+
+When building or updating a feature, touch as little existing code as possible.
+Design simple, extensible snippets that require minimal changes when a new feature is added.
+New features should go in their own files, and be a self-contained as possible.
+Build small blocks of code that can be used in features, without needing to modify the blocks.
