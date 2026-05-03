@@ -1,48 +1,51 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk'
 import { useMutation } from 'convex/react'
-import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { api } from '../convex/_generated/api'
 import './App.css'
-import { MoodGenerator, MoodGeneratorUnavailable } from './MoodGenerator'
+import { SpanishPractice } from './SpanishPractice'
 
-type DiscordStatus = 'idle' | 'ready' | 'missing-client-id' | 'error'
+type AppStatus = 'idle' | 'ready' | 'error'
 
 const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID
 const hasConvexUrl = Boolean(import.meta.env.VITE_CONVEX_URL)
+const localDiscordId = 'local-espanify-learner'
 
 function App() {
   if (hasConvexUrl) {
     return <ConnectedApp />
   }
 
-  return <ActivityApp moodGenerator={<MoodGeneratorUnavailable />} />
+  return (
+    <main className="activity-shell">
+      <section className="practice-card">
+        <p className="eyebrow">Configuration needed</p>
+        <h1>Connect Convex to start practicing.</h1>
+        <p className="lede">
+          Add <code>VITE_CONVEX_URL</code> to enable the Spanish learning flow.
+        </p>
+      </section>
+    </main>
+  )
 }
 
 function ConnectedApp() {
   const registerDiscordUser = useMutation(api.users.registerDiscordUser)
-
-  return (
-    <ActivityApp
-      moodGenerator={<MoodGenerator />}
-      registerDiscordUser={registerDiscordUser}
-    />
-  )
-}
-
-type ActivityAppProps = {
-  moodGenerator: ReactNode
-  registerDiscordUser?: (args: { discordId: string }) => Promise<unknown>
-}
-
-function ActivityApp({ moodGenerator, registerDiscordUser }: ActivityAppProps) {
-  const [status, setStatus] = useState<DiscordStatus>(
-    clientId ? 'idle' : 'missing-client-id',
-  )
+  const [status, setStatus] = useState<AppStatus>('idle')
+  const [discordId, setDiscordId] = useState<string>()
   const [errorMessage, setErrorMessage] = useState<string>()
 
   useEffect(() => {
     if (!clientId) {
+      registerDiscordUser({ discordId: localDiscordId })
+        .then(() => {
+          setDiscordId(localDiscordId)
+          setStatus('ready')
+        })
+        .catch((error) => {
+          setStatus('error')
+          setErrorMessage(error instanceof Error ? error.message : 'Unknown error')
+        })
       return
     }
 
@@ -53,13 +56,11 @@ function ActivityApp({ moodGenerator, registerDiscordUser }: ActivityAppProps) {
       try {
         await discordSdk.ready()
 
-        if (registerDiscordUser) {
-          const { user } = await discordSdk.commands.authenticate({})
-
-          await registerDiscordUser({ discordId: user.id })
-        }
+        const { user } = await discordSdk.commands.authenticate({})
+        await registerDiscordUser({ discordId: user.id })
 
         if (isMounted) {
+          setDiscordId(user.id)
           setStatus('ready')
         }
       } catch (error) {
@@ -79,67 +80,21 @@ function ActivityApp({ moodGenerator, registerDiscordUser }: ActivityAppProps) {
 
   return (
     <main className="activity-shell">
-      <section className="hero">
-        <p className="eyebrow">Discord Activity Starter</p>
-        <h1>Vite + React is ready for Discord.</h1>
-        <p className="lede">
-          This app initializes the Discord Embedded App SDK and waits for
-          Discord to mark the activity as ready.
-        </p>
-      </section>
-
-      <section className="status-card" aria-live="polite">
-        <span className={`status-dot status-dot--${status}`} />
-        <div>
-          <h2>{getStatusTitle(status)}</h2>
-          <p>{getStatusDescription(status, errorMessage)}</p>
-        </div>
-      </section>
-
-      {moodGenerator}
-
-      <section className="next-steps">
-        <h2>Next steps</h2>
-        <ol>
-          <li>
-            Add your Discord app client ID to <code>.env.local</code>.
-          </li>
-          <li>
-            Start Vite with <code>pnpm dev</code>.
-          </li>
-          <li>
-            Point your Discord Activity URL mapping at your HTTPS tunnel.
-          </li>
-        </ol>
-      </section>
+      {status === 'ready' && discordId ? (
+        <SpanishPractice discordId={discordId} />
+      ) : (
+        <section className="practice-card" aria-live="polite">
+          <p className="eyebrow">Espanify</p>
+          <h1>Preparing your Spanish practice.</h1>
+          <p className="lede">
+            {status === 'error'
+              ? (errorMessage ?? 'Could not initialize your learner profile.')
+              : 'Connecting to your learner profile...'}
+          </p>
+        </section>
+      )}
     </main>
   )
-}
-
-function getStatusTitle(status: DiscordStatus) {
-  switch (status) {
-    case 'ready':
-      return 'Connected to Discord'
-    case 'missing-client-id':
-      return 'Client ID needed'
-    case 'error':
-      return 'Discord SDK failed to initialize'
-    default:
-      return 'Waiting for Discord'
-  }
-}
-
-function getStatusDescription(status: DiscordStatus, errorMessage?: string) {
-  switch (status) {
-    case 'ready':
-      return 'The activity called discordSdk.ready() successfully.'
-    case 'missing-client-id':
-      return 'Create .env.local and set VITE_DISCORD_CLIENT_ID to your Discord application client ID.'
-    case 'error':
-      return errorMessage ?? 'Check that the app is running inside Discord and your client ID is correct.'
-    default:
-      return 'Open this URL from a Discord Activity launch to complete initialization.'
-  }
 }
 
 export default App

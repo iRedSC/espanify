@@ -11,11 +11,6 @@
   }
 }
 
-.hero {
-  max-width: 720px;
-  margin-top: auto;
-}
-
 .eyebrow {
   color: var(--accent);
   font-size: 14px;
@@ -30,67 +25,117 @@
   font-size: 20px;
 }
 
-.status-card,
-.mood-card,
-.next-steps {
+.practice-card,
+.lesson-panel,
+.result-card,
+.weakness-summary {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 24px;
   box-shadow: var(--shadow);
   box-sizing: border-box;
-  max-width: 760px;
   padding: 24px;
 }
 
-.status-card {
-  align-items: flex-start;
-  display: flex;
-  gap: 16px;
-}
-
-.status-card h2,
-.mood-card h2,
-.next-steps h2 {
-  margin-bottom: 8px;
-}
-
-.status-dot {
-  background: var(--status-idle);
-  border-radius: 999px;
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--status-idle), transparent 82%);
-  flex: 0 0 auto;
-  height: 16px;
-  margin-top: 8px;
-  width: 16px;
-}
-
-.status-dot--ready {
-  background: var(--status-ready);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--status-ready), transparent 82%);
-}
-
-.status-dot--missing-client-id,
-.status-dot--error {
-  background: var(--status-error);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--status-error), transparent 82%);
-}
-
-.mood-card {
+.practice-card {
   display: grid;
-  gap: 16px;
+  gap: 24px;
+  margin: auto 0;
+  max-width: 860px;
+  width: 100%;
 }
 
-.mood-result {
+.stats-row,
+.button-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stats-row span {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  border-radius: 999px;
   color: var(--text-h);
-  font-size: 22px;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.lesson-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.panel-label {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.sentence {
+  color: var(--text-h);
+  font-size: clamp(28px, 5vw, 44px);
   line-height: 1.35;
 }
 
-.mood-error {
-  color: var(--status-error);
+.hint-list,
+.weakness-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.mood-button {
+.hint-list li,
+.weakness-list li {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.hint-list span {
+  color: var(--text);
+}
+
+.hint-list strong,
+.weakness-list span {
+  color: var(--text-h);
+}
+
+.answer-field {
+  color: var(--text-h);
+  display: grid;
+  font-weight: 700;
+  gap: 8px;
+}
+
+textarea {
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  color: var(--text-h);
+  font: inherit;
+  min-height: 128px;
+  padding: 14px 16px;
+  resize: vertical;
+}
+
+textarea:focus {
+  border-color: var(--accent);
+  outline: 3px solid color-mix(in srgb, var(--accent), transparent 72%);
+}
+
+button {
   appearance: none;
   background: var(--accent);
   border: 0;
@@ -103,18 +148,38 @@
   padding: 12px 20px;
 }
 
-.mood-button:disabled {
+button:disabled {
   cursor: not-allowed;
   opacity: 0.62;
 }
 
-.next-steps {
-  margin-bottom: auto;
+.empty-state {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
 }
 
-.next-steps ol {
+.result-card,
+.weakness-summary {
   display: grid;
-  gap: 12px;
-  margin: 0;
-  padding-left: 24px;
+  gap: 14px;
+}
+
+.result-card.passed {
+  border-color: color-mix(in srgb, var(--status-ready), transparent 42%);
+}
+
+.result-card.failed,
+.error-message {
+  border-color: color-mix(in srgb, var(--status-error), transparent 42%);
+}
+
+.error-message {
+  color: var(--status-error);
+}
+
+.loading {
+  margin: auto 0;
 }

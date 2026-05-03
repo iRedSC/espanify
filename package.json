@@ -19,7 +19,8 @@
     "@trigger.dev/sdk": "4.4.5",
     "convex": "^1.37.0",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "yaml": "^2.8.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
