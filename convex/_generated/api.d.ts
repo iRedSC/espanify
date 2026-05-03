@@ -10,6 +10,7 @@
 
 import type * as ai from "../ai.js";
 import type * as health from "../health.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   health: typeof health;
+  users: typeof users;
 }>;
 
 /**

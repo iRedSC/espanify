@@ -1,5 +1,8 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk'
+import { useMutation } from 'convex/react'
+import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
+import { api } from '../convex/_generated/api'
 import './App.css'
 import { MoodGenerator, MoodGeneratorUnavailable } from './MoodGenerator'
 
@@ -9,6 +12,30 @@ const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID
 const hasConvexUrl = Boolean(import.meta.env.VITE_CONVEX_URL)
 
 function App() {
+  if (hasConvexUrl) {
+    return <ConnectedApp />
+  }
+
+  return <ActivityApp moodGenerator={<MoodGeneratorUnavailable />} />
+}
+
+function ConnectedApp() {
+  const registerDiscordUser = useMutation(api.users.registerDiscordUser)
+
+  return (
+    <ActivityApp
+      moodGenerator={<MoodGenerator />}
+      registerDiscordUser={registerDiscordUser}
+    />
+  )
+}
+
+type ActivityAppProps = {
+  moodGenerator: ReactNode
+  registerDiscordUser?: (args: { discordId: string }) => Promise<unknown>
+}
+
+function ActivityApp({ moodGenerator, registerDiscordUser }: ActivityAppProps) {
   const [status, setStatus] = useState<DiscordStatus>(
     clientId ? 'idle' : 'missing-client-id',
   )
@@ -26,6 +53,12 @@ function App() {
       try {
         await discordSdk.ready()
 
+        if (registerDiscordUser) {
+          const { user } = await discordSdk.commands.authenticate({})
+
+          await registerDiscordUser({ discordId: user.id })
+        }
+
         if (isMounted) {
           setStatus('ready')
         }
@@ -42,7 +75,7 @@ function App() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [registerDiscordUser])
 
   return (
     <main className="activity-shell">
@@ -63,7 +96,7 @@ function App() {
         </div>
       </section>
 
-      {hasConvexUrl ? <MoodGenerator /> : <MoodGeneratorUnavailable />}
+      {moodGenerator}
 
       <section className="next-steps">
         <h2>Next steps</h2>

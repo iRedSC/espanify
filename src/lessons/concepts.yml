@@ -1,0 +1,89 @@
+1:
+    - subject: basic SVO word order
+      importance: 10
+      difficulty: 2
+      roadblock: english permits flexible emphasis through word order; spanish relies on other mechanisms
+    - subject: noun-adjective agreement (gender and number)
+      importance: 10
+      difficulty: 3
+      roadblock: english adjectives are invariable; remembering dual agreement is habit-forming
+    - subject: definite and indefinite articles
+      importance: 9
+      difficulty: 3
+      roadblock: spanish uses articles where english omits them (generalizations, abstract nouns)
+    - subject: personal a
+      importance: 8
+      difficulty: 2
+      roadblock: no english equivalent; learners forget to mark specific human direct objects
+    - subject: ser vs estar
+      importance: 10
+      difficulty: 5
+      roadblock: both translate to "to be"; distinguishing essence from state is conceptually unfamiliar
+    - subject: question formation (subject-verb inversion)
+      importance: 8
+      difficulty: 2
+      roadblock: english uses auxiliary "do"; spanish simply inverts and adds punctuation
+
+2:
+    - subject: object pronoun placement (before the verb)
+      importance: 9
+      difficulty: 5
+      roadblock: english places object pronouns after the verb; spanish requires proclisis in most cases
+    - subject: double object pronouns (me lo, se lo)
+      importance: 8
+      difficulty: 6
+      roadblock: sequencing and the se lo substitution for le lo feel unnatural to english speakers
+    - subject: gustar and similar verbs
+      importance: 10
+      difficulty: 6
+      roadblock: these are reverse-constructed; the thing liked is the subject, not the person
+    - subject: preterite vs imperfect
+      importance: 10
+      difficulty: 7
+      roadblock: both translate to english simple past; aspectual distinction requires rethinking what "past" means
+    - subject: por vs para
+      importance: 8
+      difficulty: 6
+      roadblock: both translate to "for"; the distinction is contextual and multi-layered
+    - subject: subjunctive mood (noun clauses)
+      importance: 10
+      difficulty: 8
+      roadblock: english barely marks subjunctive; recognizing trigger structures requires new instinct
+    - subject: relative pronouns (que, quien, el cual)
+      importance: 7
+      difficulty: 4
+      roadblock: over-relying on "que" when register or antecedent type demands another form
+
+3:
+    - subject: se constructions (passive, impersonal, middle, accidental)
+      importance: 9
+      difficulty: 8
+      roadblock: se is overloaded with functions; disambiguating requires syntactic and pragmatic awareness
+    - subject: subjunctive in adjective clauses
+      importance: 8
+      difficulty: 8
+      roadblock: antecedent certainty vs uncertainty determines mood; the logic is subtle
+    - subject: subjunctive in adverbial clauses
+      importance: 8
+      difficulty: 9
+      roadblock: some conjunctions always trigger subjunctive, others depend on context; memorization plus judgment
+    - subject: si clauses (conditional sentences)
+      importance: 9
+      difficulty: 7
+      roadblock: tense-mood pairings are rigid and differ from english patterns
+    - subject: hyperbaton and flexible word order
+      importance: 6
+      difficulty: 8
+      roadblock: literary and spoken spanish frequently reorder constituents for emphasis; learners over-rely on SVO
+    - subject: leísmo, loísmo, laísmo
+      importance: 5
+      difficulty: 6
+      roadblock: regional variation in object pronoun agreement creates conflicting input for learners
+    - subject: nominalization and infinitive clauses
+      importance: 7
+      difficulty: 7
+      roadblock: spanish uses infinitive clauses where english prefers gerunds or that-clauses; the boundary is inconsistent
+    - subject: cleft sentences and focus structures
+      importance: 6
+      difficulty: 8
+      roadblock: spanish emphasizes constituents through syntactic restructuring rather than prosodic stress alone
