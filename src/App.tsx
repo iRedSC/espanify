@@ -1,5 +1,5 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk'
-import { useMutation } from 'convex/react'
+import { useAction, useMutation } from 'convex/react'
 import { useEffect, useState } from 'react'
 import { api } from '../convex/_generated/api'
 import './App.css'
@@ -31,6 +31,7 @@ function App() {
 
 function ConnectedApp() {
   const registerDiscordUser = useMutation(api.users.registerDiscordUser)
+  const exchangeDiscordCode = useAction(api.discord.exchangeDiscordCode)
   const [status, setStatus] = useState<AppStatus>('idle')
   const [discordId, setDiscordId] = useState<string>()
   const [errorMessage, setErrorMessage] = useState<string>()
@@ -40,7 +41,7 @@ function ConnectedApp() {
 
     async function initializeLearner() {
       try {
-        const nextDiscordId = await getDiscordId()
+        const nextDiscordId = await getDiscordId(exchangeDiscordCode)
         await registerDiscordUser({ discordId: nextDiscordId })
 
         if (isMounted) {
@@ -60,7 +61,7 @@ function ConnectedApp() {
     return () => {
       isMounted = false
     }
-  }, [registerDiscordUser])
+  }, [exchangeDiscordCode, registerDiscordUser])
 
   return (
     <main className="activity-shell">
@@ -81,7 +82,12 @@ function ConnectedApp() {
   )
 }
 
-async function getDiscordId() {
+async function getDiscordId(
+  exchangeDiscordCode: (args: {
+    code: string
+    clientId: string
+  }) => Promise<{ accessToken: string }>,
+) {
   if (!clientId || !isDiscordEnvironment()) {
     return localDiscordId
   }
@@ -89,15 +95,19 @@ async function getDiscordId() {
   const discordSdk = new DiscordSDK(clientId)
   await discordSdk.ready()
 
-  const { participants } =
-    await discordSdk.commands.getInstanceConnectedParticipants()
-  const participant = participants.find((nextParticipant) => !nextParticipant.bot)
+  const { code } = await discordSdk.commands.authorize({
+    client_id: clientId,
+    response_type: 'code',
+    state: '',
+    prompt: 'none',
+    scope: ['identify'],
+  })
+  const { accessToken } = await exchangeDiscordCode({ code, clientId })
+  const auth = await discordSdk.commands.authenticate({
+    access_token: accessToken,
+  })
 
-  if (!participant) {
-    throw new Error("Discord did not return a connected activity participant.")
-  }
-
-  return participant.id
+  return auth.user.id
 }
 
 function isDiscordEnvironment() {

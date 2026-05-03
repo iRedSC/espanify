@@ -9,6 +9,7 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as discord from "../discord.js";
 import type * as health from "../health.js";
 import type * as users from "../users.js";
 
@@ -20,6 +21,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  discord: typeof discord;
   health: typeof health;
   users: typeof users;
 }>;
